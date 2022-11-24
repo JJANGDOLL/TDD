@@ -7,11 +7,21 @@ public:
         this->amount = amount;
     };
     
-    void times(int multiplier) 
+    Dollar* times(int multiplier) 
     {
-        amount *= multiplier;
+        return new Dollar(amount * multiplier);
     };
 
+    bool equals(Dollar* object)
+    {
+        return amount == object->amount;
+    }
+
+    friend bool operator==(const Dollar& lhs, const Dollar& rhs)
+    {
+        return lhs.amount == rhs.amount;
+    }
+
+private:
     int amount;
 };
-
