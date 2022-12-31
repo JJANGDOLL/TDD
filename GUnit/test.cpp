@@ -60,3 +60,21 @@ TEST(testReduceMoney)
     Money* result = bank->reduce(*Money::dollar(1), "USD");
     EXPECT_EQ(*Money::dollar(1), *result);
 }
+
+TEST(testReduceMoneyDifferentCurrency)
+{
+    Bank* bank = new Bank();
+    bank->addRate("CHF", "USD", 2);
+    Money* result = bank->reduce(*Money::franc(2), "USD");
+    EXPECT_EQ(*Money::dollar(1), *result);
+}
+
+TEST(testArrayEquals)
+{
+    EXPECT_EQ(std::string("abc"), std::string("abc"));
+}
+
+TEST(testIdentityRate)
+{
+    EXPECT_EQ(1, (new Bank())->rate("USD", "USD"));
+}

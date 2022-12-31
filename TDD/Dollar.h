@@ -5,12 +5,14 @@
 #include <tchar.h>
 #include <debugapi.h>
 #include <string>
+#include <unordered_map>
 
 class Money;
+class Bank;
 
 interface IExpression
 {
-    virtual Money* reduce(std::string to) = 0;
+    virtual Money* reduce(Bank* bank, std::string to) = 0;
 };
 
 class Money : public IExpression
@@ -23,10 +25,7 @@ public:
     }
 
 
-    Money* reduce(std::string to) override
-    {
-        return this;
-    }
+    Money* reduce(Bank *bank, std::string to) override;
 
 public:
     int amount;
@@ -102,10 +101,18 @@ Money* Money::franc(int amount)
     return new Money(amount, "CHF");
 }
 
+class Pair;
+
 class Bank
 {
 public:
     Money* reduce(IExpression& source, std::string to);
+
+    int rate(std::string from, std::string to);
+
+    std::unordered_map<int, int> rates;
+
+    void addRate(std::string from, std::string to, int rate);
 };
 
 class Sum : public IExpression
@@ -117,7 +124,7 @@ public:
 
     }
 
-    Money* reduce(std::string to)
+    Money* reduce(Bank* bank, std::string to) override
     {
         int amount = augend.amount + addend.amount;
         return new Money(amount, to);
@@ -129,7 +136,7 @@ public:
 
 Money* Bank::reduce(IExpression& source, std::string to)
 {
-    return source.reduce(to);
+    return source.reduce(this, to);
 }
 
 IExpression* operator+(const Money& lhs, const Money& rhs)
@@ -138,3 +145,47 @@ IExpression* operator+(const Money& lhs, const Money& rhs)
     return added;
 }
 
+Money* Money::reduce(Bank* bank, std::string to)
+{
+    int rate = bank->rate(currency, to);
+
+    return new Money(amount / rate, to);
+}
+
+class Pair
+{
+public:
+    std::string from;
+    std::string to;
+
+    Pair(std::string InFrom, std::string InTo)
+        : from(InFrom), to(InTo)
+    {
+    }
+
+    bool equals(void* object)
+    {
+        Pair* pair = static_cast<Pair*>(object);
+        return from == pair->from && to == pair->to;
+    }
+
+    int hashCode()
+    {
+        return 0;
+    }
+};
+
+void Bank::addRate(std::string from, std::string to, int rate)
+{
+    Pair* pair = new Pair(from, to);
+    rates[pair->hashCode()] = rate;
+}
+
+int Bank::rate(std::string from, std::string to)
+{
+    if (from == to) return 1;
+
+    Pair* pair = new Pair(from, to);
+    int rate = rates[pair->hashCode()];
+    return rate;
+}
